@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
-const Movies = () => {
+const Movies = ({latLong}) => {
   const [theatres, setTheatres] = useState([]);
   const [movies, setMovies] = useState([]);
   const [error, setError] = useState("");
@@ -13,10 +13,10 @@ const Movies = () => {
   const fetchNearbyTheatres = async () => {
     setLoading(true);
     const API_URL = "https://api.foursquare.com/v3/places/search";
-    const LAT_LONG = "26.4142,80.4079"; // Replace with your latitude, longitude
+    const LAT_LONG = `${(latLong.split("-")[0], latLong.split("-")[1])}`; // Replace with your latitude, longitude
     const RADIUS = 50000; // Search radius in meters
     const QUERY = "movie theaters"; // Search query
-    const API_KEY = "fsq3EpglePzlNCcpQqBv6AsDScthamChqWWZ1nI2Uy6YufE="; // Replace with your Foursquare API Key
+    const API_KEY = `${import.meta.env.VITE_FSAPIKEY}`; // Replace with your Foursquare API Key
 
     try {
       const response = await fetch(
@@ -52,8 +52,8 @@ const Movies = () => {
           method: "GET",
           headers: {
             "api-version": "v200", // Replace with the correct version
-            Authorization: "Basic REVWVDpIekNWMmYyZWt4NjE=", // Replace with your base64 encoded `username:password`
-            "x-api-key": "f8rWxxg6Pu21haGmuwkZV94FkTLxrrrj2fF5fe5Q",
+            Authorization: `Basic ${import.meta.env.VITE_MGAUTH}`, // Replace with your base64 encoded `username:password`
+            "x-api-key": `${import.meta.env.VITE_MGAPIKEY}`,
             territory: "IN", // Territory for India
             client: "DEVT",
             "device-datetime": new Date().toISOString(),

@@ -2,7 +2,7 @@ import React from "react";
 
 const contactUs = () => {
   return (
-    <div className="bg-purple-100 w-full mt-8">
+    <div className="bg-purple-100 dark:bg-neutral-900/60 w-full mt-8">
       <div className="w-full">
         <div className="mt-16 mb-4">
           <div className="container flex flex-col lg:flex-row items-center">

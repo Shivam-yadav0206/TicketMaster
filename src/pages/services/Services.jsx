@@ -7,7 +7,7 @@ import Act from "../../assets/act.png";
 import { Link } from "react-router-dom";
 const Services = () => {
   return (
-    <div className="bg-purple-50 w-full lg:px-28 md:px-16 sm:px-7 px-4 mt-[8ch] ">
+    <div className="bg-purple-50 dark:bg-neutral-900/65 w-full lg:px-28 md:px-16 sm:px-7 px-4 mt-[8ch] ">
       <div className="w-full ">
         <div class="services section" id="services">
           <div className="w-full items-center flex justify-between my-8">

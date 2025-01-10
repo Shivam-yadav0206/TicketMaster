@@ -18,6 +18,8 @@ const Activity = ({ latLong }) => {
 
   };
 
+
+  
   useEffect(() => {
     const fetchVenues = async () => {
       try {
@@ -28,8 +30,7 @@ const Activity = ({ latLong }) => {
               },${latLong.split("-")[1]}&limit=50`,
               {
                 headers: {
-                  Authorization:
-                    "fsq3EpglePzlNCcpQqBv6AsDScthamChqWWZ1nI2Uy6YufE=",
+                  Authorization: `${`${import.meta.env.VITE_FSAPIKEY}`}`,
                 },
               }
             );

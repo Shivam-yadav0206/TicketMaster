@@ -17,7 +17,7 @@ const Booking = () => {
     method: "GET",
     headers: {
       accept: "application/json",
-      Authorization: "fsq3ysVhJO/1UlA01Dk22NY+mKxGkopyCqKXy55ZB7S+JNs=",
+      Authorization: `${import.meta.env.VITE_FSAPIKEY}`,
     },
   };
 

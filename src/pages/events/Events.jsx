@@ -27,7 +27,7 @@ const Events = ({ latLong }) => {
       try {
         const response = await fetch(`${API_URL}?${params}`, {
           headers: {
-            Authorization: "fsq3EpglePzlNCcpQqBv6AsDScthamChqWWZ1nI2Uy6YufE=",
+            Authorization: `${import.meta.env.VITE_FSAPIKEY}`,
             "Content-Type": "application/json",
           },
         });

@@ -14,7 +14,7 @@ import { MdNavigation } from "react-icons/md"; // Material Design Navigation
 import socketIOClient from "socket.io-client";
 
 const socket = socketIOClient("http://localhost:8080");
-const Details = () => {
+const Details = ({ latLong }) => {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -157,10 +157,12 @@ const Details = () => {
   const fetchNearbyTheatres = async () => {
     setLoading(true);
     const API_URL = "https://api.foursquare.com/v3/places/search";
-    const LAT_LONG = "26.4142,80.4079"; // Replace with your latitude, longitude
+    const LAT_LONG = `${ Number(latLong.split("-")[0]).toFixed(2)},${Number( latLong
+      .split("-")[1])
+      .toFixed(2)}`; // Replace with your latitude, longitude
     const RADIUS = 50000; // Search radius in meters
     const QUERY = "movie theaters"; // Search query
-    const API_KEY = "fsq3EpglePzlNCcpQqBv6AsDScthamChqWWZ1nI2Uy6YufE="; // Replace with your Foursquare API Key
+    const API_KEY = `${import.meta.env.VITE_FSAPIKEY}`; // Replace with your Foursquare API Key
 
     try {
       const response = await fetch(
@@ -194,7 +196,7 @@ const Details = () => {
     const options = {
       method: "GET",
       headers: {
-        "x-rapidapi-key": "b48e2baa35mshe54fe70f20e5131p184189jsn4332e766accb", // Replace with a valid API key
+        "x-rapidapi-key": `${import.meta.env.VITE_RAPIKEY}`, // Replace with a valid API key
         "x-rapidapi-host": "film-show-ratings.p.rapidapi.com",
       },
     };
@@ -253,7 +255,7 @@ const Details = () => {
     return <div>Loading...</div>;
   }
 
-  const screenNo = Math.floor(Math.random() * 4) + 1
+  const screenNo = Math.floor(Math.random() * 4) + 1;
 
   // if (error) {
   //   return <div>Error: {error}</div>;
@@ -262,7 +264,6 @@ const Details = () => {
   const toggleCard = (index) => {
     setActiveCard(activeCard === index ? null : index);
   };
-
 
   const handlePayment = () => {
     try {
@@ -354,7 +355,8 @@ const Details = () => {
                               <div
                                 key={colIndex}
                                 onClick={() =>
-                                  isValidSeat && !isHold &&
+                                  isValidSeat &&
+                                  !isHold &&
                                   handleSeatClick({
                                     id: seatLabel,
                                     image:
@@ -367,16 +369,17 @@ const Details = () => {
                                     quantity: 1,
                                   })
                                 }
-                                className={`w-4 h-4 flex items-center justify-center rounded-md ${!isValidSeat
+                                className={`w-4 h-4 flex items-center justify-center rounded-md ${
+                                  !isValidSeat
                                     ? "bg-white cursor-default"
                                     : isSelected
-                                      ? "bg-blue-500 text-white"
-                                      : isReserved
-                                        ? "bg-gray-500"
-                                        : isHold && !isSelected
-                                          ? "bg-gray-500 blink cursor-not-allowed"
-                                          : "bg-gray-200 hover:bg-blue-300"
-                                  }`}
+                                    ? "bg-blue-500 text-white"
+                                    : isReserved
+                                    ? "bg-gray-500"
+                                    : isHold && !isSelected
+                                    ? "bg-gray-500 blink cursor-not-allowed"
+                                    : "bg-gray-200 hover:bg-blue-300"
+                                }`}
                                 style={
                                   isHold && !isSelected
                                     ? { animation: "blink 1s infinite" }
@@ -453,7 +456,7 @@ const Details = () => {
               onClick={handlePayment}
               disabled={selectedSeats.length === 0}
               className={`mt-6 px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 w-full disabled:bg-gray-400`}>
-              Proceed to Pay (Rs {" "}
+              Proceed to Pay (Rs{" "}
               {selectedSeats.reduce((sum, seat) => sum + seat.price, 0)})
             </button>
           </div>
@@ -462,13 +465,13 @@ const Details = () => {
 
       {/* Movie Details */}
       <div
-        className="flex items-center  w-screen "
+        className="flex items-center justify-center w-screen "
         style={{ fontFamily: "Montserrat, sans-serif" }}>
         <div className="container flex justify-center">
           <div className="w-full sm:w-9/12 ml-auto mr-auto ">
             <div className="flex flex-wrap  ">
               <div className="w-full sm:w-3/12 bg-red-200 p-5 sm:pb-20  rounded-s-lg">
-                <h1 className="font-bold text-lg">{movie?.title}</h1>
+                <h1 className="font-bold text-lg text-black">{movie?.title}</h1>
                 <div className="w-10 h-1 bg-red-600"></div>
                 <ul className="space-y-2 mt-2 sm:mb-8">
                   <li>
@@ -524,11 +527,12 @@ const Details = () => {
 
       {/* Theatre Details */}
       <div className="flex justify-center items-center flex-col space-y-4 p-4 w-full">
-        {theatres.map((theatre, index) => (
+        {theatres?.map((theatre, index) => (
           <div
             key={index}
-            className={`w-3/4 flex flex-col bg-gray-100 dark:bg-neutral-900/70 shadow-md border rounded-md transition-all duration-300 ${activeCard === index ? "h-auto" : "h-24"
-              }`}>
+            className={`w-3/4 flex flex-col bg-gray-100 dark:bg-neutral-900/70 shadow-md border rounded-md transition-all duration-300 ${
+              activeCard === index ? "h-auto" : "h-24"
+            }`}>
             {/* Cinema Header */}
             <div
               className="flex items-center justify-between p-4 cursor-pointer bg-violet-600 text-white rounded-t-md"
@@ -590,8 +594,9 @@ const Details = () => {
       {/* Date/Time Selection for seat booking */}
       <div
         id="drawer-timepicker"
-        className={`fixed top-0 left-0 z-40 h-screen p-4 overflow-y-auto transition-transform bg-white w-96 dark:bg-gray-800 ${isOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`fixed top-0 left-0 z-40 h-screen p-4 overflow-y-auto transition-transform bg-white w-96 dark:bg-gray-800 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
         tabIndex="-1"
         aria-labelledby="drawer-timepicker-label">
         <h5
@@ -646,15 +651,16 @@ const Details = () => {
                         )}_${time.replace(":", "")}`
                       );
                     }}
-                    className={`w-full p-2 text-sm rounded-lg border ${time ===
+                    className={`w-full p-2 text-sm rounded-lg border ${
+                      time ===
                         finalId?.split("_")[2]?.slice(0, 2) +
-                        ":" +
-                        finalId?.split("_")[2]?.slice(2) &&
-                        finalId?.split("_")[1] ===
+                          ":" +
+                          finalId?.split("_")[2]?.slice(2) &&
+                      finalId?.split("_")[1] ===
                         format(new Date(dates[index]?.date), "ddMMyyyy")
                         ? "bg-blue-500 text-white border-blue-500"
                         : "bg-gray-200 text-gray-800 border-gray-300"
-                      }`}>
+                    }`}>
                     {time}
                   </button>
                 ))}
@@ -673,10 +679,11 @@ const Details = () => {
                 <button
                   onClick={openModal}
                   type="submit"
-                  className={`w-full inline-flex items-center justify-center rounded-lg text-sm px-5 py-2.5 text-center focus:outline-none font-medium ${finalId
+                  className={`w-full inline-flex items-center justify-center rounded-lg text-sm px-5 py-2.5 text-center focus:outline-none font-medium ${
+                    finalId
                       ? "bg-blue-500 hover:bg-blue-600 focus:ring-4 focus:ring-blue-300 text-white"
                       : "bg-gray-400 cursor-not-allowed text-white"
-                    }`}
+                  }`}
                   disabled={!finalId}>
                   Seat Select
                 </button>

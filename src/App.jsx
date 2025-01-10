@@ -28,13 +28,19 @@ function App() {
             <Route path="/" element={<Home setLatLong={setLatLong} />} />
             <Route path="/services" element={<Services />} />
             <Route path="/about" element={<About />} />
-            <Route path="/activities" element={<Activity latLong = {latLong}/>} />
+            <Route
+              path="/activities"
+              element={<Activity latLong={latLong} />}
+            />
             <Route path="/events" element={<Events latLong={latLong} />} />
             <Route path="/movies" element={<Movies latLong={latLong} />} />
             <Route path="/sports" element={<Sport latLong={latLong} />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/bus/bus-details" element={<Detail />} />
-            <Route path="/movies/:id" element={<MovieDetail />} />
+            <Route
+              path="/movies/:id"
+              element={<MovieDetail latLong={latLong} />}
+            />
             <Route path="/detail/:id" element={<Booking />} />
           </Routes>
 
