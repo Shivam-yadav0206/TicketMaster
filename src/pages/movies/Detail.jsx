@@ -233,7 +233,7 @@ const Details = ({ latLong }) => {
       try {
         setLoading(true);
         const response = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}seating/${finalId}`
+          `${import.meta.env.VITE_BACKEND_URL}/seating/${finalId}`
         );
 
         if (!response.ok) {
