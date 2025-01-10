@@ -13,7 +13,7 @@ import { AiOutlinePlus } from "react-icons/ai"; // Ant Design Plus
 import { MdNavigation } from "react-icons/md"; // Material Design Navigation
 import socketIOClient from "socket.io-client";
 
-const socket = socketIOClient("http://localhost:8080");
+const socket = socketIOClient(`${import.meta.env.VITE_BACKEND_URL}`);
 const Details = ({ latLong }) => {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -120,7 +120,13 @@ const Details = ({ latLong }) => {
   ];
 
   const openModal = () => setIsModalOpen(true);
-  const onClose = () => setIsModalOpen(false);
+  const onClose = () => {
+    selectedSeats.map(seat => {
+      socket.emit("releaseSeat", seat?.id, finalId);
+    })
+    setSelectedSeats([])
+    setIsModalOpen(false)
+  };
 
   const handleSeatClick = (seatId) => {
     if (!selectedSeats.includes(seatId)) {
@@ -227,7 +233,7 @@ const Details = ({ latLong }) => {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:8080/seating/${finalId}`
+          `${import.meta.env.VITE_BACKEND_URL}/seating/${finalId}`
         );
 
         if (!response.ok) {
