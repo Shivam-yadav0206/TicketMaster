@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { Link } from "react-router-dom";
-
+import Loader from "../../components/loader/Loader";
 const Movies = ({latLong}) => {
   const [theatres, setTheatres] = useState([]);
   const [movies, setMovies] = useState([]);
@@ -98,6 +98,10 @@ const Movies = ({latLong}) => {
     }
   }, [viewType]);
 
+    if (loading) {
+      return <Loader />;
+    }
+
   return (
     <div className="bg-purple-50 dark:bg-neutral-900/40 w-full lg:px-24 md:px-16 sm:px-7 px-4 mt-[8ch] pb-[8ch] space-y-14">
       {/* Search and Filter */}
@@ -138,7 +142,7 @@ const Movies = ({latLong}) => {
 
       {/* Data Display */}
       <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading && <p>Loading...</p>}
+
         {error && <p className="text-red-500">{error}</p>}
         {viewType === "Theatre" &&
           list.map((theatre) => (

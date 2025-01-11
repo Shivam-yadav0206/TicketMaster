@@ -9,6 +9,7 @@ import {
   dates,
   getPriceBySeatType,
 } from "../../constants";
+import Loader from "../../components/loader/Loader";
 
 const Details = ({ latLong }) => {
   const [movie, setMovie] = useState(null);
@@ -232,7 +233,7 @@ const Details = ({ latLong }) => {
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loader />;
   }
 
   // if (error) {
