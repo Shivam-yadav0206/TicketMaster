@@ -1,3 +1,12 @@
+import addDays from "date-fns/addDays";
+import PusherJS from "pusher-js";
+
+// Client-side Pusher setup (uses `pusher-js` package)
+
+export const pusherClient = new PusherJS(`${import.meta.env.VITE_PUSHER_KEY}`, {
+  cluster: "ap2",
+});
+
 export const categories = {
   resources: [
     {
@@ -601,4 +610,57 @@ export const resp = {
       ],
     },
   },
+};
+
+const getDayName = (date) =>
+  date.toLocaleDateString("en-US", { weekday: "long" });
+
+export const days = [
+  {
+    id: "today",
+    label: getDayName(new Date()),
+    times: ["09:30", "13:00", "16:30", "21:30"],
+  },
+  {
+    id: "tomorrow",
+    label: getDayName(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+    times: ["09:30", "13:00", "16:30", "21:30"],
+  },
+  {
+    id: "dayAfter",
+    label: getDayName(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)),
+    times: ["09:30", "13:00", "16:30", "21:30"],
+  },
+];
+
+export const dates = [
+  {
+    id: "today",
+    label: getDayName(new Date()),
+    date: new Date(),
+  },
+  {
+    id: "tomorrow",
+    label: getDayName(addDays(new Date(), 1)),
+    date: addDays(new Date(), 1),
+  },
+  {
+    id: "dayAfter",
+    label: getDayName(addDays(new Date(), 2)),
+    date: addDays(new Date(), 2),
+  },
+];
+
+export const getPriceBySeatType = (seatLabel, totalRows) => {
+  // Get the row label by extracting the first character of the seat label
+  const rowLabel = seatLabel.charAt(0);
+
+  // Check conditions for price assignment
+  if (rowLabel === "A" || rowLabel === "B") {
+    return 200; // Price for rows starting with A or B
+  } else if (rowLabel === String.fromCharCode(64 + totalRows)) {
+    return 550; // Price for the last row
+  } else {
+    return 350; // Default price for other rows
+  }
 };

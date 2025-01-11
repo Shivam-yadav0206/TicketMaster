@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import ReactModal from "react-modal";
-import addDays from "date-fns/addDays";
-import { FaHeart } from "react-icons/fa"; // Font Awesome Heart
-import { FaWheelchair } from "react-icons/fa";
-import { FaPlus } from "react-icons/fa"; // Font Awesome Plus
-import { FaLocationArrow } from "react-icons/fa"; // Font Awesome Location Arrow
+import { FaHeart, FaWheelchair, FaPlus, FaLocationArrow } from "react-icons/fa"; 
 import { format } from "date-fns";
-// OR
-import { resp } from "../../constants";
-import { AiOutlinePlus } from "react-icons/ai"; // Ant Design Plus
-import { MdNavigation } from "react-icons/md"; // Material Design Navigation
-import socketIOClient from "socket.io-client";
+import {
+  pusherClient,
+  days,
+  dates,
+  getPriceBySeatType,
+} from "../../constants";
 
-const socket = socketIOClient(`${import.meta.env.VITE_BACKEND_URL}`);
 const Details = ({ latLong }) => {
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,145 +23,154 @@ const Details = ({ latLong }) => {
   const [seatingData, setSeatingData] = useState(null);
   const [heldSeats, setHeldSeats] = useState([]);
   const [message, setMessage] = useState("");
+  const screenNo = Math.floor(Math.random() * 4) + 1;
+  const { id } = useParams();
 
   useEffect(() => {
     if (!finalId) return;
-    // Join the room for the selected movie and showtime
-    socket.emit("joinRoom", finalId);
 
-    socket.on("ticket:release", (holdData) => {
-      console.log("Hold data received in client:", holdData);
-      console.log("Current Seating data:", seatingData);
-      setSeatingData((prev) => ({
-        ...prev,
-        hold: holdData,
-      }));
-    });
-    socket.on("ticket:hold", (holdData) => {
-      console.log("Hold data received in client:", holdData);
-      console.log("Current Seating data:", seatingData);
-      setSeatingData((prev) => ({
-        ...prev,
-        hold: holdData,
-      }));
-    });
+    // Fetch seating data
+    const fetchSeatingData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/seating/${finalId}`
+        );
 
-    // Listen for seat hold success or error
-    socket.on("holdSuccess", (msg) => {
-      setMessage(msg); // Display success message
-    });
-    socket.on("holdError", (msg) => {
-      setMessage(msg); // Display error message
-    });
-    socket.on("releaseSuccess", (msg) => {
-      setMessage(msg); // Display success message
-    });
-    socket.on("releaseError", (msg) => {
-      setMessage(msg); // Display error message
-    });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
 
-    return () => {
-      socket.off("ticket:hold");
-      socket.off("holdSuccess");
-      socket.off("holdError");
-      socket.off("ticket:release");
-      socket.off("releaseSuccess");
-      socket.off("releaseError");
+        const data = await response.json();
+        setSeatingData(data?.data);
+        //console.log("Seating data:", data?.data);
+
+        // Now that we have the seating data, subscribe to Pusher channel
+        const channel = pusherClient.subscribe(finalId);
+
+        // Bind seat-selected event
+        channel.bind("seat-selected", (holdData) => {
+          // console.log("Seat-Selected Channel", holdData);
+
+          setSeatingData((prev) => {
+            const updatedHold = [...(prev.hold || [])]; // Ensure we have an array
+            updatedHold.push(holdData.id);
+            return {
+              ...prev,
+              hold: updatedHold, // Update the hold array
+            };
+          });
+        });
+
+        // Bind seat-released event
+        channel.bind("seat-released", (holdData) => {
+          console.log("Seat-Released Channel", holdData);
+
+          setSeatingData((prev) => {
+            const updatedHold = [...(prev.hold || [])];
+            const index = updatedHold.indexOf(holdData.id);
+            if (index !== -1) {
+              updatedHold.splice(index, 1); // Remove the id
+            }
+            return {
+              ...prev,
+              hold: updatedHold, // Update the hold array
+            };
+          });
+        });
+
+        return () => {
+          // Unsubscribe from the Pusher channel when component unmounts or finalId changes
+          channel.unsubscribe();
+        };
+      } catch (err) {
+        console.error("Error fetching seating data:", err);
+        setError("Failed to fetch seating data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     };
+
+    // Trigger the fetch and Pusher subscription
+    fetchSeatingData();
   }, [finalId]);
 
-  const handleHoldSeat = (seat) => {
-    // Emit the hold event to the server
-    socket.emit("holdSeat", seat, finalId);
-  };
-
-  const getDayName = (date) =>
-    date.toLocaleDateString("en-US", { weekday: "long" });
-  // Array of days to display
-
-  const days = [
-    {
-      id: "today",
-      label: getDayName(new Date()),
-      times: ["09:30", "13:00", "16:30", "21:30"],
-    },
-    {
-      id: "tomorrow",
-      label: getDayName(new Date(Date.now() + 24 * 60 * 60 * 1000)),
-      times: ["09:30", "13:00", "16:30", "21:30"],
-    },
-    {
-      id: "dayAfter",
-      label: getDayName(new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)),
-      times: ["09:30", "13:00", "16:30", "21:30"],
-    },
-  ];
-
-  const dates = [
-    {
-      id: "today",
-      label: getDayName(new Date()),
-      date: new Date(),
-    },
-    {
-      id: "tomorrow",
-      label: getDayName(addDays(new Date(), 1)),
-      date: addDays(new Date(), 1),
-    },
-    {
-      id: "dayAfter",
-      label: getDayName(addDays(new Date(), 2)),
-      date: addDays(new Date(), 2),
-    },
-  ];
-
-  const openModal = () => setIsModalOpen(true);
   const onClose = () => {
-    selectedSeats.map(seat => {
-      socket.emit("releaseSeat", seat?.id, finalId);
-    })
-    setSelectedSeats([])
-    setIsModalOpen(false)
-  };
-
-  const handleSeatClick = (seatId) => {
-    if (!selectedSeats.includes(seatId)) {
-      handleHoldSeat(seatId?.id);
-    } else {
-      socket.emit("releaseSeat", seatId, finalId);
-    }
-    setSelectedSeats((prev) => {
-      const seatExists = prev.some((seat) => seat.id === seatId.id);
-
-      return seatExists
-        ? prev.filter((seat) => seat.id !== seatId.id) // Deselect the seat by matching the `id`
-        : [...prev, seatId]; // Add the new seat object
+    selectedSeats.map((seat) => {
+      //pusherServer.trigger(finalId, "releaseSeat", seat?.id);
     });
-    console.log("Selected seats:", selectedSeats);
+    setSelectedSeats([]);
+    setIsModalOpen(false);
   };
-  const { id } = useParams();
-  const getPriceBySeatType = (seatLabel, totalRows) => {
-    // Get the row label by extracting the first character of the seat label
-    const rowLabel = seatLabel.charAt(0);
 
-    // Check conditions for price assignment
-    if (rowLabel === "A" || rowLabel === "B") {
-      return 200; // Price for rows starting with A or B
-    } else if (rowLabel === String.fromCharCode(64 + totalRows)) {
-      return 550; // Price for the last row
+  const handleSeatClick = async (seatId) => {
+    console.log("Clicked");
+    const seatExists = selectedSeats.some((seat) => seat.id === seatId.id);
+
+    if (!seatExists) {
+      // Seat is not selected, trigger seat-selected event
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/seatUpdates`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            channel: finalId,
+            event: "seat-selected",
+            data: seatId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error triggering event: ${response.statusText}`);
+      }
+
+      const responseData = await response.json();
+      //console.log("Event triggered successfully:", responseData);
     } else {
-      return 350; // Default price for other rows
+      // Seat is already selected, trigger seat-released event
+      console.log("At Else event");
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/seatUpdates`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            channel: finalId,
+            event: "seat-released",
+            data: seatId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error triggering event: ${response.statusText}`);
+      }
     }
+
+    // Update selected seats
+    setSelectedSeats((prev) => {
+      if (seatExists) {
+        // Deselect the seat by matching the `id`
+        return prev.filter((seat) => seat.id !== seatId.id);
+      } else {
+        // Add the new seat object
+        return [...prev, seatId];
+      }
+    });
   };
-  const toggleDrawer = () => {
-    setIsOpen(!isOpen);
-  };
+
   const fetchNearbyTheatres = async () => {
     setLoading(true);
     const API_URL = "https://api.foursquare.com/v3/places/search";
-    const LAT_LONG = `${ Number(latLong.split("-")[0]).toFixed(2)},${Number( latLong
-      .split("-")[1])
-      .toFixed(2)}`; // Replace with your latitude, longitude
+    const LAT_LONG = `${Number(latLong.split("-")[0]).toFixed(2)},${Number(
+      latLong.split("-")[1]
+    ).toFixed(2)}`; // Replace with your latitude, longitude
     const RADIUS = 50000; // Search radius in meters
     const QUERY = "movie theaters"; // Search query
     const API_KEY = `${import.meta.env.VITE_FSAPIKEY}`; // Replace with your Foursquare API Key
@@ -193,7 +198,6 @@ const Details = ({ latLong }) => {
       setLoading(false);
     }
   };
-  // const movieId = "tt13186482"; // Example IMDb movie ID
 
   useEffect(() => {
     fetchNearbyTheatres();
@@ -225,51 +229,15 @@ const Details = ({ latLong }) => {
     };
 
     fetchMovieDetails();
-  }, [id]);
-
-  useEffect(() => {
-    // Fetch seating data
-    const fetchSeatingData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/seating/${finalId}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setSeatingData(data?.data);
-        // const { configuration, reservedSeats, hold } = data?.data;
-        console.log("Seating data:", data?.data);
-      } catch (err) {
-        console.error("Error fetching seating data:", err);
-        setError("Failed to fetch seating data. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (finalId) {
-      fetchSeatingData();
-    }
-  }, [finalId]);
+  }, []);
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
-  const screenNo = Math.floor(Math.random() * 4) + 1;
-
   // if (error) {
   //   return <div>Error: {error}</div>;
   // }
-
-  const toggleCard = (index) => {
-    setActiveCard(activeCard === index ? null : index);
-  };
 
   const handlePayment = () => {
     try {
@@ -282,14 +250,14 @@ const Details = ({ latLong }) => {
       })
         .then((res) => res.json())
         .then((data) => {
-          console.log(data);
+          //console.log(data);
           // Check if the response contains a URL property
           if (data && data.url) {
             // Redirect to the URL returned by the server
             // dispatch(clearCart());
             window.location.href = data.url;
           } else {
-            console.error("Invalid response from server:", data);
+            //console.error("Invalid response from server:", data);
           }
         })
         .catch((err) => console.log(err));
@@ -362,7 +330,7 @@ const Details = ({ latLong }) => {
                                 key={colIndex}
                                 onClick={() =>
                                   isValidSeat &&
-                                  !isHold &&
+                                  (!isHold || isSelected) &&
                                   handleSeatClick({
                                     id: seatLabel,
                                     image:
@@ -542,7 +510,9 @@ const Details = ({ latLong }) => {
             {/* Cinema Header */}
             <div
               className="flex items-center justify-between p-4 cursor-pointer bg-violet-600 text-white rounded-t-md"
-              onClick={() => toggleCard(index)}>
+              onClick={() =>
+                setActiveCard(activeCard === index ? null : index)
+              }>
               <div>
                 <h3 className="text-lg font-semibold">{theatre.name}</h3>
                 <p className="text-sm">{theatre.location.address}</p>
@@ -586,7 +556,7 @@ const Details = ({ latLong }) => {
                   <div className="mt-6 mr-6">
                     <button
                       className="px-4 py-3  bg-red-500 text-white rounded hover:bg-red-600 transition"
-                      onClick={toggleDrawer}>
+                      onClick={() => setIsOpen(!isOpen)}>
                       Select Date
                     </button>
                   </div>
@@ -614,7 +584,7 @@ const Details = ({ latLong }) => {
           type="button"
           data-drawer-hide="drawer-timepicker"
           aria-controls="drawer-timepicker"
-          onClick={toggleDrawer}
+          onClick={() => setIsOpen(!isOpen)}
           className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 absolute top-2.5 end-2.5 inline-flex items-center justify-center dark:hover:bg-gray-600 dark:hover:text-white">
           <svg
             className="w-3 h-3"
@@ -630,7 +600,7 @@ const Details = ({ latLong }) => {
               d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
             />
           </svg>
-          <span className="sr-only" onClick={toggleDrawer}>
+          <span className="sr-only" onClick={() => setIsOpen(!isOpen)}>
             Close menu
           </span>
         </button>
@@ -677,13 +647,13 @@ const Details = ({ latLong }) => {
               <div className="grid grid-cols-2 gap-4 bottom-4 left-0 w-full md:px-4 md:absolute">
                 <button
                   type="button"
-                  onClick={toggleDrawer}
+                  onClick={() => setIsOpen(!isOpen)}
                   data-drawer-hide="drawer-timepicker"
                   className="py-2.5 px-5 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
                   Close
                 </button>
                 <button
-                  onClick={openModal}
+                  onClick={() => setIsModalOpen(true)}
                   type="submit"
                   className={`w-full inline-flex items-center justify-center rounded-lg text-sm px-5 py-2.5 text-center focus:outline-none font-medium ${
                     finalId
